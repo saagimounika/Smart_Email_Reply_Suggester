@@ -1,0 +1,39 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Smart Email Reply Suggester</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;background:#f3f6fb;margin:0;color:#1f2937}
+header{background:#1d4ed8;color:#fff;padding:18px 40px}
+header h1{margin:0;font-size:24px}header p{margin:4px 0 0;opacity:.85;font-size:14px}
+main{max-width:900px;margin:24px auto;padding:0 20px}
+.card{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,.1);margin-bottom:20px}
+label{font-weight:600;font-size:14px}textarea,input,select{width:100%;box-sizing:border-box;padding:10px;margin:6px 0 14px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;font-family:inherit}
+textarea{height:150px}.row{display:flex;gap:16px}.row>div{flex:1}
+button{background:#1d4ed8;color:#fff;border:0;padding:11px 24px;border-radius:6px;font-size:15px;cursor:pointer}
+.reply{border-left:4px solid #1d4ed8;background:#f8fafc;padding:12px 16px;margin-bottom:12px;border-radius:4px;white-space:pre-wrap;font-size:14px}
+.badge{display:inline-block;background:#dbeafe;color:#1e40af;padding:2px 10px;border-radius:12px;font-size:12px;margin-right:6px}
+.copy{background:#10b981;padding:5px 12px;font-size:12px;margin-top:8px}
+#status{color:#64748b;font-size:14px}
+</style></head><body>
+<header><h1>Smart Email Reply Suggester</h1><p>Paste an email, pick a tone, get AI-generated reply options</p></header>
+<main>
+<div class="card">
+ <label>Received email</label>
+ <textarea id="email" placeholder="Paste the email you received here..."></textarea>
+ <div class="row"><div><label>Your name (for sign-off)</label><input id="uname" placeholder="e.g. Priya"></div>
+ <div><label>Tone</label><select id="tone">{% for t in tones %}<option>{{t}}</option>{% endfor %}</select></div></div>
+ <button id="go" onclick="run()">Suggest Replies</button> <span id="status"></span>
+</div>
+<div class="card" id="out" style="display:none"><h3 style="margin-top:0">Suggested replies</h3>
+ <div id="meta"></div><div id="replies"></div></div>
+</main>
+<script>
+async function run(){
+ const s=document.getElementById('status');s.textContent='Generating replies...';
+ const r=await fetch('/api/suggest',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({email:document.getElementById('email').value,name:document.getElementById('uname').value,tone:document.getElementById('tone').value})});
+ const d=await r.json();
+ if(!r.ok){s.textContent='Error: '+d.error;return}
+ s.textContent='Done';document.getElementById('out').style.display='block';
+ document.getElementById('meta').innerHTML='<span class="badge">Detected intent: '+d.intent+'</span><span class="badge">Tone: '+d.tone+'</span><span class="badge">Engine: '+d.backend+'</span><br><br>';
+ document.getElementById('replies').innerHTML=d.replies.map((x,i)=>'<div class="reply"><b>Option '+(i+1)+' - '+x.style+'</b>\n\n'+x.body+'<br><button class="copy" onclick="navigator.clipboard.writeText(this.parentNode.innerText)">Copy</button></div>').join('');
+}
+</script></body></html>
